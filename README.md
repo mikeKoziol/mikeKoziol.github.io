@@ -1,2 +1,2 @@
 # mikeKoziol.github.io
-CS416_Viz
+UIUC CS416 Narrative Vizualization Project
