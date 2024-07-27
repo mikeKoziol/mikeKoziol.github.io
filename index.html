@@ -1,15 +1,31 @@
 <!DOCTYPE html>
 
 <html>
-<body>
 
+    <head>
+        <script src='https://d3js.org/d3.v5.min.js'></script>
 
-    <h1>Test Header</h1>
-    <p>Created by: Michael Koziol</p>
+        <h1>Test Header</h1>
+        <p>Created by: Michael Koziol</p>
+    </head>
 
+    <body onload="init()">
 
+        <div id="viz"></div>
+        
 
+        <script>
 
-</body>
+            async function init() {
+                const data = await d3.csv("/data/student_performance_data.csv")
+                    .catch(function (error) {
+                        console.error(error);
+                    });
+                console.log("Done");
+            }
+
+        </script>
+
+    </body>
+
 </html>
-
