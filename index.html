@@ -24,13 +24,31 @@
             .select_style {
                 width: 100px;
             }
+
+            .annotation_text {
+                width: 175px;
+                word-wrap: break-word;
+                font-size: 16px;
+                font-family: Arial;
+                fill: black;
+                padding: 2px;
+            }
+
+            .title_text {
+                font-size: 32px;
+                font-family: Arial;
+                fill: black;
+            }
         </style>
     </head>
 
     <body onload="init()">
 
-        <h1>CS 416: Narrative Vizualization Project</h1>
-        <p>Created by: Michael Koziol</p>
+        <h1 style="font-family: Arial">CS 416: Narrative Vizualization Project</h1>
+        <p style="font-family: Arial">
+            Created by Michael Koziol with data from 
+            <a href="https://www.kaggle.com/datasets/waqi786/student-performance-dataset?resource=download&select=student_performance_data.csv">Kaggle</a>
+        </p>
 
         <div id="viz" class="viz_container"></div>
 
@@ -44,6 +62,34 @@
                     - tooltips
                     - ui enhancements
             */
+
+            // strings and such
+            const titles = [
+                "Student Performance: GPA vs Attendance Rate",
+                "Student Performance: Weekly Study Hours",
+                "Title 3",
+                "Title 4"
+            ];
+/*Lets consider the origin as a factor.
+                Given that all the students are attending at least 50% of their classes and the minimum GPA 
+                is 2.0, maybe attending only 50% of classes is enough to do well. <><>*/
+            const descriptions = [
+                `Welcome to my narritive vizualization! <br><br> What you are reading now is an annotation, 
+                where I will provide information about the vizualization. <br><br> In the scatter plot to 
+                the right, I am comparing the the Attendance Rate to the GPA of different college 
+                students, ages 18-24, to see if attending classes correlates to a higher GPA.
+                <br><br><br><br> Please use the arrows below to navigate the scenes.`,
+
+                `From the previous scene, we could deduce there was no correlation between Attendance Rate 
+                and GPA as all the points had no clear pattern. <br><br> In search of new patterns, I have 
+                gone ahead and changed the Study Hours/Week Plot Parameter on the far right, highlighting all 
+                the points with students that studied 30 or more hours per week, the max is 39 hours, to see 
+                if those students attending only 50% of classes still study to maintain a higher GPA.`,
+
+                "Description 3",
+
+                "Description 4"
+            ];
 
             // visual variables
             var width = 800;
@@ -75,7 +121,7 @@
                 svg = d3.select("#viz")
                     .append("svg")
                         .attr("width", width + 2*margin)
-                        .attr("height", height + 2*margin);
+                        .attr("height", height + margin);
 
                 title_g = svg.append("g")
                     .attr("id", "title")
@@ -83,7 +129,7 @@
 
                 annotation_g = svg.append("g")
                     .attr("id", "annotation")
-                    .attr("transform", "translate(" + 0 + ", " + margin + ")");
+                    .attr("transform", "translate(" + 1 + ", " + margin + ")");
 
                 plot_g = svg.append("g")
                     .attr("id", "plot")
@@ -147,6 +193,7 @@
                 // scene changers
                 render_scene_changers();
                 
+                update_scene();
 
             }
 
@@ -197,13 +244,17 @@
                 } else if (active_scene == 4) {
                     color = "red";
                 } 
-                return color;
+                return "#fa6e02";
             }
 
             function point_opacity(d) {
                 opacity = 1;
                 if (active_scene == 2) {
-                    opacity = 1
+                    if (+d.StudyHoursPerWeek >= min_value && +d.StudyHoursPerWeek <= max_value) {
+                        opacity = 1;
+                    } else {
+                        opacity = 0.15;
+                    }
                 } else if (active_scene == 3) {
                     opacity = 1;
                 } else if (active_scene == 4) {
@@ -220,22 +271,26 @@
 
             function render_annotation() {
                 annotation_g.append("rect")
-                    .attr("width", 175)
+                    .attr("width", 177)
                     .attr("height", 450)
-                    .attr("opacity", 0.5)
+                    .attr("opacity", 0.25)
+                    .attr("fill", "gray")
                     .attr("stroke", "black")
                     .attr("stroke-width", 2);
+
+                annotation_g.append("foreignObject")
+                        .attr("width", 175)
+                        .attr("height", 450)
+                    .append("xhtml:div")
+                        .attr("class", "annotation_text");
             }
 
             function render_title() {
                 title_g.append("text")
-                    .attr("font-size", 28)
-                    .attr("font-family", "Arial")
-                    .attr("fill", "black")
-                    .html("Title Testing")
+                    .attr("id", "title_text")
+                    .attr("class", "title_text");
             }
 
-            // TODO: put shadow under button
             function render_scene_changers() {
                 // forward
                 sub_scene = svg.append("g")
@@ -247,7 +302,9 @@
                 sub_scene.append("rect")
                         .attr("width", 40)
                         .attr("height", 30)
-                        .attr("fill", "gray");
+                        .attr("fill", "gray")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", "1px");
 
                 sub_scene.append("text")
                         .attr("x", 20)
@@ -275,7 +332,9 @@
                 add_scene.append("rect")
                         .attr("width", 40)
                         .attr("height", 30)
-                        .attr("fill", "gray");
+                        .attr("fill", "gray")
+                        .attr("stroke", "black")
+                        .attr("stroke-width", "1px");
 
                 add_scene.append("text")
                         .attr("x", 20)
@@ -305,7 +364,7 @@
                     setTimeout(() => { 
                         sub_scene.classed("disabled", false); 
                         add_scene.classed("disabled", false); 
-                    }, 1000);
+                    }, 500);
                 }
 
                 active_scene++;
@@ -329,7 +388,7 @@
                     setTimeout(() => { 
                         sub_scene.classed("disabled", false); 
                         add_scene.classed("disabled", false); 
-                    }, 1000);
+                    }, 500);
                 }
 
                 active_scene--;
@@ -344,10 +403,13 @@
 
             function render_parameters() {
                 parameters_g.append("rect")
-                    .attr("width", 115)
+                    .attr("x", -2)
+                    .attr("width", 117)
                     .attr("height", annotation.height)
-                    .attr("fill", "green")
-                    .attr("opacity", 0.5);
+                    .attr("fill", "gray")
+                    .attr("opacity", 0.25)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", "1px");
 
                 parameters_g.append("text")
                     .attr("id", "parameter_text")
@@ -397,7 +459,7 @@
                 form.append("label")
                         .style("font-weight", "bold")
                         .style("text-decoration", "underline")
-                        .text("Study Rate (hrs)");
+                        .text("Study Hours/Week");
                 
                 form.append("label")
                         .attr("for", "min_input")
@@ -464,6 +526,37 @@
             }
 
             function update_scene() {
+                console.log("SCENE: " + active_scene);
+                title_g.select("#title_text").html(titles[active_scene-1]);
+                annotation_g.select("div").html(descriptions[active_scene-1]);
+
+                d3.select("#select_major").attr("disabled", true);
+                form.selectAll("input, button").attr("disabled", true);
+
+                if (active_scene == 1) {
+                    min_value = 0;
+                    max_value = 39;
+                    major_value = "All";
+                } else if (active_scene == 2) {
+                    min_value = 30;
+                    max_value = 39;
+                    major_value = "All";
+                } else if (active_scene == 3) {
+                    min_value = 0;
+                    max_value = 39;
+                    major_value = "All";
+                } else if (active_scene == 4) {
+                    d3.select("#select_major").attr("disabled", null);
+                    form.selectAll("input, button").attr("disabled", null);
+                    min_value = 0;
+                    max_value = 39;
+                    major_value = "All";
+                }
+
+                d3.select("#min_input").node().value = min_value;
+                d3.select("#max_input").node().value = max_value;
+                d3.select("#select_major").node().value = major_value;
+
                 update_points();
             }
 
