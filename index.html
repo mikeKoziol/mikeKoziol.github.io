@@ -16,6 +16,14 @@
                 pointer-events: none;
                 opacity: 0.5;
             }
+
+            .foreign_object_style {
+                font-size: 14px;
+            }
+
+            .select_style {
+                width: 100px;
+            }
         </style>
     </head>
 
@@ -49,7 +57,10 @@
 
             // parameter variables
             var active_scene = 0;
-            var svg, plot_g, annotation_g, title_g, parameters_g, sub_scene, add_scene, data;
+            var min_value = 0;
+            var max_value = 39;
+            var major_value = "All";
+            var svg, plot_g, annotation_g, title_g, parameters_g, sub_scene, add_scene, form, data;
 
 
             async function init() {
@@ -153,16 +164,58 @@
                         .attr("opacity", point_opacity);
             }
 
-            function point_radius() {
-                return 2.5;
+            function update_points() {
+                console.log("Updating points...");
+                plot_g.select("#points")
+                    .selectAll("circle")
+                    .data(data)
+                    .transition()
+                    .duration(500)
+                        .attr("r", point_radius)
+                        .attr("fill", point_color)
+                        .attr("opacity", point_opacity);
             }
 
-            function point_color() {
-                return "red";
+            function point_radius(d) {
+                radius = 3;
+                if (active_scene == 2) {
+                    radius = 3;
+                } else if (active_scene == 3) {
+                    radius = 3;
+                } else if (active_scene == 4) {
+                    radius = 3;
+                } 
+                return radius;
             }
 
-            function point_opacity() {
-                return 1;
+            function point_color(d) {
+                color = "red"
+                if (active_scene == 2) {
+                    color = "red";
+                } else if (active_scene == 3) {
+                    color = "red";
+                } else if (active_scene == 4) {
+                    color = "red";
+                } 
+                return color;
+            }
+
+            function point_opacity(d) {
+                opacity = 1;
+                if (active_scene == 2) {
+                    opacity = 1
+                } else if (active_scene == 3) {
+                    opacity = 1;
+                } else if (active_scene == 4) {
+                    if (major_value != "All" && major_value != d.Major) {
+                        opacity = 0;
+                    } else if (+d.StudyHoursPerWeek >= min_value && +d.StudyHoursPerWeek <= max_value) {
+                        opacity = 1;
+                    } else {
+                        opacity = 0.15;
+                    }
+                }
+                return opacity;
             }
 
             function render_annotation() {
@@ -206,6 +259,10 @@
                         .attr("font-weight", "bold")
                         .html("<");
 
+                if (active_scene == 1) {
+                    sub_scene.classed("disabled", true);
+                }
+
                 sub_scene.on("click", sub_scene_click);
 
                 // backward
@@ -230,10 +287,18 @@
                         .attr("font-weight", "bold")
                         .html(">");
 
+                if (active_scene == 4) {
+                    add_scene.classed("disabled", true);
+                }
+
                 add_scene.on("click", add_scene_click);
             }
 
             function add_scene_click() {
+                if (active_scene == 3) {
+                    add_scene.classed("disabled", true);
+                }
+
                 if (!add_scene.classed("disabled")) {
                     add_scene.classed("disabled", true);
                     sub_scene.classed("disabled", true);
@@ -248,10 +313,16 @@
                     active_scene = 4;
                 }
 
+                update_scene();
+
                 console.log("Scene = " + active_scene);
             }
 
             function sub_scene_click() {
+                if (active_scene == 2) {
+                    sub_scene.classed("disabled", true);
+                }
+
                 if (!sub_scene.classed("disabled")) {
                     add_scene.classed("disabled", true);
                     sub_scene.classed("disabled", true);
@@ -266,10 +337,10 @@
                     active_scene = 1;
                 }
 
+                update_scene();
+
                 console.log("Scene = " + active_scene);
             }
-
-
 
             function render_parameters() {
                 parameters_g.append("rect")
@@ -277,6 +348,123 @@
                     .attr("height", annotation.height)
                     .attr("fill", "green")
                     .attr("opacity", 0.5);
+
+                parameters_g.append("text")
+                    .attr("id", "parameter_text")
+                    .attr("x", 57)
+                    .attr("y", -10)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "black")
+                    .style("text-decoration", "underline")
+                    .attr("font-size", 16)
+                    .attr("font-family", "Arial")
+                    .attr("font-weight", "bold")
+                    .html("Plot Parameters");
+
+                parameters_g.append("foreignObject")
+                        .attr("id", "foreign_select")
+                        .attr("width", 115)
+                        .attr("height", 40)
+                    .append("xhtml:div")
+                        .attr("class", "foreign_object_style")
+                        .html(`
+                            <label for="select_major" style="font-weight: bold; text-decoration: underline">Major</label>
+                            <select id="select_major" class="select_style" onchange="major_change(event)">
+                                <option value="All">All</option>
+                                <option value="Arts">Arts</option>
+                                <option value="Education">Education</option>
+                                <option value="Business">Business</option>
+                                <option value="Science">Science</option>
+                                <option value="Engineering">Engineering</option>
+                            </select>
+                        `);
+                
+
+                form = parameters_g.append("foreignObject")
+                        .attr("id", "foreign_form")
+                        .attr("x", 0)
+                        .attr("y", 40)
+                        .attr("width", 115)
+                        .attr("height", 200)
+                    .append("xhtml:div")
+                        .attr("class", "foreign_object_style")
+                    .append("form")
+                        .attr("id", "attendance_form")
+                        .style("display", "flex")
+                        .style("flex-direction", "column")
+                        .style("width", "115");
+                
+                form.append("label")
+                        .style("font-weight", "bold")
+                        .style("text-decoration", "underline")
+                        .text("Study Rate (hrs)");
+                
+                form.append("label")
+                        .attr("for", "min_input")
+                        .text("Min:");
+
+                form.append("input")
+                        .attr("id","min_input")
+                        .attr("type", "number")
+                        .attr("min", 0)
+                        .attr("max", 39)
+                        .attr("value", 0)
+                        .style("width", "40px");
+
+                form.append("label")
+                        .attr("for", "max_input")
+                        .text("Max:");
+
+                form.append("input")
+                        .attr("id","max_input")
+                        .attr("type", "number")
+                        .attr("min", 0)
+                        .attr("max", 39)
+                        .attr("value", 39)
+                        .style("width", "40px");
+
+                form.append("button")
+                        .attr("type", "button")
+                        .text("Submit")
+                        .style("width", "65px")
+                        .on("click", highlight_attendance_rates);
+
+                form.append("label")
+                        .attr("id", "form_error")
+                        .style("color", "red")
+                        .style("display", "none")
+                        .text("Try again, domain = [0, 39]");
+
+            }
+
+            function highlight_attendance_rates() {
+                d3.select("#form_error").style("display", "none"); // reset error
+
+                min_value = d3.select("#min_input").node().value;
+                max_value = d3.select("#max_input").node().value;
+
+                console.log("Min: " + min_value + " Max: " + max_value);
+
+                if (max_value < 0 || max_value > 39 || min_value < 0 || min_value > 39) {
+                    min_value = 0;
+                    max_value = 39;
+                    d3.select("#min_input").node().value = 0;
+                    d3.select("#max_input").node().value = 39;
+                    d3.select("#form_error").style("display", "inline");
+                }
+                
+                update_points();
+            }
+
+            function major_change(event) {
+                major_value = event.target.value;
+                update_points();
+
+                console.log("Event: " + event.target.value);
+            }
+
+            function update_scene() {
+                update_points();
             }
 
 
