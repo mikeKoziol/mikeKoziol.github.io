@@ -5,24 +5,102 @@
     <head>
         <script src='https://d3js.org/d3.v5.min.js'></script>
 
-        <h1>Test Header</h1>
+        <style>
+            .viz_container {
+                display: inline-block;
+                border: 2px solid black;
+                padding: 15px;
+            }
+        </style>
+
+        <h1>CS 416: Narrative Vizualization Project</h1>
         <p>Created by: Michael Koziol</p>
     </head>
 
     <body onload="init()">
 
-        <div id="viz"></div>
-        
+        <div id="viz" class="viz_container"></div>
 
         <script>
+            var width = 750;
+            var height = 500;
+            var margin = 50;
+
+            var title = {width: width, height: 50, top: 25, left: 25};
+            var annotation = {width: 175, height: (height - title.height), top: title.height, left: 0};
+
+            var x_scale, y_scale, svg;
 
             async function init() {
-                const data = await d3.csv("/data/student_performance_data.csv")
+                // load data
+                const data = await d3.csv("https://raw.githubusercontent.com/mikeKoziol/mikeKoziol.github.io/258d7cf4577e06c14f87f2825f88856d1516f744/data/student_performance_data.csv")
                     .catch(function (error) {
                         console.error(error);
                     });
-                console.log("Done");
+                console.log("Data Load Done");
+                
+                // create svg layout
+                svg = d3.select("#viz")
+                    .append("svg")
+                        .attr("width", width + 2*margin)
+                        .attr("height", height + 2*margin);
+
+                title_g = svg.append("g")
+                    .attr("id", "title")
+                    .attr("transform", "translate(" + 0 + ", " + 25 + ")");
+
+                annotation_g = svg.append("g")
+                    .attr("id", "annotation")
+                    .attr("transform", "translate(" + 0 + ", " + 50 + ")");
+
+                plot_g = svg.append("g")
+                    .attr("id", "plot")
+                    .attr("transform", "translate(" + margin + ", " + 0 + ")");
+
+                // axes
+                x_scale = d3.scaleLinear().domain([50, 100]).range([annotation.width, width]);
+                y_scale = d3.scaleLinear().domain([2, 4]).range([height, title.height]);
+
+                plot_g.append("g")
+                        .attr("id", "left_axis")
+                        .attr("transform", "translate(" + (annotation.width) + ", " + 0 + ")")
+                    .call(d3.axisLeft(y_scale));
+
+                plot_g.append("g")
+                        .attr("id", "bottom_axis")
+                        .attr("transform", "translate(" + 0 + ", " + (annotation.height + title.height) + ")")
+                    .call(d3.axisBottom(x_scale));
+
+                // points
+                plot_g.append("g")
+                        .attr("id", "points")
+                    .selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                        .attr("cx", function(d) { return x_scale(d.AttendanceRate); })
+                        .attr("cy", function(d) { return y_scale(d.GPA); })
+                        .attr("r", 2.5)
+                        .attr("fill", "red");
+
+                // tooltip
+
+                // annotation
+                annotation_g.append("rect")
+                    .attr("width", 175)
+                    .attr("height", 450)
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 2);
+
+                // title
+                title_g.append("text")
+                    .attr("font-size", 28)
+                    .attr("font-family", "Arial")
+                    .attr("fill", "black")
+                    .html("Title Testing")
+
             }
+
 
         </script>
 
