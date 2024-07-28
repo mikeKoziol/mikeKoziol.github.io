@@ -9,31 +9,52 @@
             .viz_container {
                 display: inline-block;
                 border: 2px solid black;
-                padding: 15px;
+                padding: 12px;
+            }
+
+            .disabled {
+                pointer-events: none;
+                opacity: 0.5;
             }
         </style>
-
-        <h1>CS 416: Narrative Vizualization Project</h1>
-        <p>Created by: Michael Koziol</p>
     </head>
 
     <body onload="init()">
 
+        <h1>CS 416: Narrative Vizualization Project</h1>
+        <p>Created by: Michael Koziol</p>
+
         <div id="viz" class="viz_container"></div>
 
         <script>
-            var width = 750;
+            /*
+                TODO: 
+                    - axis labels
+                    - parameter filters
+                    - scene swapping
+                    - annotation graph
+                    - tooltips
+                    - ui enhancements
+            */
+
+            // visual variables
+            var width = 800;
             var height = 500;
             var margin = 50;
 
             var title = {width: width, height: 50, top: 25, left: 25};
             var annotation = {width: 175, height: (height - title.height), top: title.height, left: 0};
 
-            var x_scale, y_scale, svg;
+            var x_scale, y_scale;
+
+            // parameter variables
+            var active_scene = 0;
+            var svg, plot_g, annotation_g, title_g, parameters_g, sub_scene, add_scene, data;
+
 
             async function init() {
                 // load data
-                const data = await d3.csv("https://raw.githubusercontent.com/mikeKoziol/mikeKoziol.github.io/258d7cf4577e06c14f87f2825f88856d1516f744/data/student_performance_data.csv")
+                data = await d3.csv("https://raw.githubusercontent.com/mikeKoziol/mikeKoziol.github.io/258d7cf4577e06c14f87f2825f88856d1516f744/data/student_performance_data.csv")
                     .catch(function (error) {
                         console.error(error);
                     });
@@ -47,18 +68,22 @@
 
                 title_g = svg.append("g")
                     .attr("id", "title")
-                    .attr("transform", "translate(" + 0 + ", " + 25 + ")");
+                    .attr("transform", "translate(" + 0 + ", " + margin/2 + ")");
 
                 annotation_g = svg.append("g")
                     .attr("id", "annotation")
-                    .attr("transform", "translate(" + 0 + ", " + 50 + ")");
+                    .attr("transform", "translate(" + 0 + ", " + margin + ")");
 
                 plot_g = svg.append("g")
                     .attr("id", "plot")
-                    .attr("transform", "translate(" + margin + ", " + 0 + ")");
+                    .attr("transform", "translate(" + (margin+10) + ", " + 0 + ")");
 
-                // axes
-                x_scale = d3.scaleLinear().domain([50, 100]).range([annotation.width, width]);
+                parameters_g = svg.append("g")
+                    .attr("id", "parameters")
+                    .attr("transform", "translate(" + (width-25) + ", " + margin + ")");
+
+                // axes and labels
+                x_scale = d3.scaleLinear().domain([50, 100]).range([annotation.width, width-2*margin]);
                 y_scale = d3.scaleLinear().domain([2, 4]).range([height, title.height]);
 
                 plot_g.append("g")
@@ -71,7 +96,50 @@
                         .attr("transform", "translate(" + 0 + ", " + (annotation.height + title.height) + ")")
                     .call(d3.axisBottom(x_scale));
 
+                plot_g.append("g")
+                        .attr("id", "left_label")
+                        .attr("transform", "translate(" + (annotation.width - margin + 5) + ", " + ((annotation.height + title.height + margin + 20)/2) + ")")
+                    .append("text")
+                        .attr("font-size", 16)
+                        .attr("font-family", "Arial")
+                        .attr("font-weight", "bold")
+                        .attr("transform", "rotate(-45, 0, 0)")
+                        .attr("fill", "black")
+                        .html("GPA")
+
+                plot_g.append("g")
+                        .attr("id", "bottom_label")
+                        .attr("transform", "translate(" + (width/2) + ", " + (annotation.height + title.height + margin - 10) + ")")
+                    .append("text")
+                        .attr("font-size", 16)
+                        .attr("font-family", "Arial")
+                        .attr("font-weight", "bold")
+                        .attr("fill", "black")
+                        .html("Attendance Rate")
+
+                active_scene = 1;
+
                 // points
+                render_points();
+
+                // parameters
+                render_parameters();
+
+                // tooltip
+
+                // annotation
+                render_annotation();
+
+                // title
+                render_title();
+
+                // scene changers
+                render_scene_changers();
+                
+
+            }
+
+            function render_points() {
                 plot_g.append("g")
                         .attr("id", "points")
                     .selectAll("circle")
@@ -80,26 +148,138 @@
                     .append("circle")
                         .attr("cx", function(d) { return x_scale(d.AttendanceRate); })
                         .attr("cy", function(d) { return y_scale(d.GPA); })
-                        .attr("r", 2.5)
-                        .attr("fill", "red");
+                        .attr("r", point_radius)
+                        .attr("fill", point_color)
+                        .attr("opacity", point_opacity);
+            }
 
-                // tooltip
+            function point_radius() {
+                return 2.5;
+            }
 
-                // annotation
+            function point_color() {
+                return "red";
+            }
+
+            function point_opacity() {
+                return 1;
+            }
+
+            function render_annotation() {
                 annotation_g.append("rect")
                     .attr("width", 175)
                     .attr("height", 450)
+                    .attr("opacity", 0.5)
                     .attr("stroke", "black")
                     .attr("stroke-width", 2);
+            }
 
-                // title
+            function render_title() {
                 title_g.append("text")
                     .attr("font-size", 28)
                     .attr("font-family", "Arial")
                     .attr("fill", "black")
                     .html("Title Testing")
-
             }
+
+            // TODO: put shadow under button
+            function render_scene_changers() {
+                // forward
+                sub_scene = svg.append("g")
+                        .attr("id", "sub_scene")
+                        .attr("transform", "translate(" + (0) + ", " + (height + 10) + ")")
+                        .attr("cursor", "pointer")
+                        .style("user-select", "none");
+
+                sub_scene.append("rect")
+                        .attr("width", 40)
+                        .attr("height", 30)
+                        .attr("fill", "gray");
+
+                sub_scene.append("text")
+                        .attr("x", 20)
+                        .attr("y", 21)
+                        .attr("text-anchor", "middle")
+                        .attr("fill", "black")
+                        .attr("font-size", 21)
+                        .attr("font-family", "Arial")
+                        .attr("font-weight", "bold")
+                        .html("<");
+
+                sub_scene.on("click", sub_scene_click);
+
+                // backward
+                add_scene = svg.append("g")
+                        .attr("id", "add_scene")
+                        .attr("transform", "translate(" + (margin) + ", " + (height + 10) + ")")
+                        .attr("cursor", "pointer")
+                        .style("user-select", "none");
+
+                add_scene.append("rect")
+                        .attr("width", 40)
+                        .attr("height", 30)
+                        .attr("fill", "gray");
+
+                add_scene.append("text")
+                        .attr("x", 20)
+                        .attr("y", 21)
+                        .attr("text-anchor", "middle")
+                        .attr("fill", "black")
+                        .attr("font-size", 21)
+                        .attr("font-family", "Arial")
+                        .attr("font-weight", "bold")
+                        .html(">");
+
+                add_scene.on("click", add_scene_click);
+            }
+
+            function add_scene_click() {
+                if (!add_scene.classed("disabled")) {
+                    add_scene.classed("disabled", true);
+                    sub_scene.classed("disabled", true);
+                    setTimeout(() => { 
+                        sub_scene.classed("disabled", false); 
+                        add_scene.classed("disabled", false); 
+                    }, 1000);
+                }
+
+                active_scene++;
+                if (active_scene > 4) {
+                    active_scene = 4;
+                }
+
+                console.log("Scene = " + active_scene);
+            }
+
+            function sub_scene_click() {
+                if (!sub_scene.classed("disabled")) {
+                    add_scene.classed("disabled", true);
+                    sub_scene.classed("disabled", true);
+                    setTimeout(() => { 
+                        sub_scene.classed("disabled", false); 
+                        add_scene.classed("disabled", false); 
+                    }, 1000);
+                }
+
+                active_scene--;
+                if (active_scene < 1) {
+                    active_scene = 1;
+                }
+
+                console.log("Scene = " + active_scene);
+            }
+
+
+
+            function render_parameters() {
+                parameters_g.append("rect")
+                    .attr("width", 115)
+                    .attr("height", annotation.height)
+                    .attr("fill", "green")
+                    .attr("opacity", 0.5);
+            }
+
+
 
 
         </script>
