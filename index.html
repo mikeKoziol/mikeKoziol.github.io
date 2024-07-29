@@ -28,7 +28,7 @@
             .annotation_text {
                 width: 175px;
                 word-wrap: break-word;
-                font-size: 16px;
+                font-size: 14px;
                 font-family: Arial;
                 fill: black;
                 padding: 2px;
@@ -44,7 +44,7 @@
 
     <body onload="init()">
 
-        <h1 style="font-family: Arial">CS 416: Narrative Vizualization Project</h1>
+        <h1 style="font-family: Arial">CS 416: Narrative Visualization Project</h1>
         <p style="font-family: Arial">
             Created by Michael Koziol with data from 
             <a href="https://www.kaggle.com/datasets/waqi786/student-performance-dataset?resource=download&select=student_performance_data.csv">Kaggle</a>
@@ -68,27 +68,36 @@
                 "Student Performance: GPA vs Attendance Rate",
                 "Student Performance: Weekly Study Hours",
                 "Student Performance: Education Majors",
-                "Student Performance: Conclusion"
+                "Student Performance: Freeroam"
             ];
-/*Lets consider the origin as a factor.
-                Given that all the students are attending at least 50% of their classes and the minimum GPA 
-                is 2.0, maybe attending only 50% of classes is enough to do well. <><>*/
+
             const descriptions = [
-                `Welcome to my narritive vizualization! <br><br> What you are reading now is an annotation, 
-                where I will provide information about the vizualization. <br><br> In the scatter plot to 
+                `Welcome to my narrative visualization! <br><br> What you are reading now is an annotation, 
+                where I will provide information about the visualization. <br><br> In the scatter plot to 
                 the right, I am comparing the the Attendance Rate to the GPA of different college 
-                students, ages 18-24, to see if attending classes correlates to a higher GPA.
+                students, ages 18-24, to see if attending classes correlates to a higher GPA. <br><br> 
+                Given the random assortment of points on the scatter plot, there is no correlation between 
+                the two variables.
                 <br><br><br><br> Please use the arrows below to navigate the scenes.`,
 
-                `From the previous scene, we could deduce there was no correlation between Attendance Rate 
-                and GPA as all the points had no clear pattern. <br><br> In search of new patterns, I have 
+                `In search of new patterns, I have 
                 gone ahead and changed the Study Hours/Week Plot Parameter on the far right, highlighting all 
                 the points with students that studied 30 or more hours per week, the max is 39 hours, to see 
-                if those students attending only 50% of classes still study to maintain a higher GPA.`,
+                if students attending only 50% of classes still study to maintain a higher GPA. <br><br> 
+                Turns out, the density of studious students with GPA below 2.8 and Attendance Rate less than 70% 
+                is low when compared to students with Attendance Rate above 70%.`,
 
-                "Description 3",
+                `In a final attempt to find more insights, I changed the Major Plot Parameter to Education to 
+                determine if some majors had skewed GPAs, yet taking a look at the graph, although there might 
+                be a linear correlation with GPA and Attendance Rate when GPA is greater than 3.0, there needs 
+                to be more data for a concrete conclusion.
+                <br><br> Without any clear correlations, some conclusions are: 
+                class attendance and time spent studying don't always indicate a strong GPA, more data about 
+                students with low GPAs and attendance rates and information about colleges is needed.
+                <br><br> Continue on to the last page to have a crack at the data.`,
 
-                "Description 4"
+                `In this scene, feel free to change the Plot Parameters on the far right to explore the Student 
+                Performance dataset.`
             ];
 
             // visual variables
@@ -194,7 +203,6 @@
                 render_scene_changers();
                 
                 update_scene();
-
             }
 
             function render_points() {
@@ -217,7 +225,7 @@
                     .selectAll("circle")
                     .data(data)
                     .transition()
-                    .duration(500)
+                    .duration(750)
                         .attr("r", point_radius)
                         .attr("fill", point_color)
                         .attr("opacity", point_opacity);
@@ -256,7 +264,13 @@
                         opacity = 0.15;
                     }
                 } else if (active_scene == 3) {
-                    opacity = 1;
+                    if (major_value != d.Major) {
+                        opacity = 0;
+                    } else if (+d.StudyHoursPerWeek >= min_value && +d.StudyHoursPerWeek <= max_value) {
+                        opacity = 1;
+                    } else {
+                        opacity = 0.15;
+                    }
                 } else if (active_scene == 4) {
                     if (major_value != "All" && major_value != d.Major) {
                         opacity = 0;
@@ -507,7 +521,7 @@
 
                 console.log("Min: " + min_value + " Max: " + max_value);
 
-                if (max_value < 0 || max_value > 39 || min_value < 0 || min_value > 39) {
+                if (max_value < 0 || max_value > 39 || min_value < 0 || min_value > 39 || min_value > max_value) {
                     min_value = 0;
                     max_value = 39;
                     d3.select("#min_input").node().value = 0;
@@ -542,9 +556,9 @@
                     max_value = 39;
                     major_value = "All";
                 } else if (active_scene == 3) {
-                    min_value = 0;
+                    min_value = 30;
                     max_value = 39;
-                    major_value = "All";
+                    major_value = "Education";
                 } else if (active_scene == 4) {
                     d3.select("#select_major").attr("disabled", null);
                     form.selectAll("input, button").attr("disabled", null);
